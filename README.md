@@ -1,6 +1,6 @@
 # bbald_test
 
-This the code in https://github.com/BlackHC/BatchBALD modified for our test case
+This is the code in https://github.com/BlackHC/BatchBALD modified for our test case
 
 Follow the instructions at https://github.com/BlackHC/BatchBALD for installation 
 
