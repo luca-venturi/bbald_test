@@ -13,6 +13,7 @@ from typing import List
 
 import mnist_model
 import mnist_model_full
+import mnist_cnn
 import emnist_model
 import vgg_model
 from active_learning_data import ActiveLearningData
@@ -143,6 +144,7 @@ def get_RepeatedMNIST():
 class DatasetEnum(enum.Enum):
     mnist = "mnist"
     mnist10k = "mnist10k"
+    mnist10kconv = "mnist10kconv"
     pre_cifar10 = "pre_cifar10"
     emnist = "emnist"
     emnist_bymerge = "emnist_bymerge"
@@ -157,7 +159,10 @@ class DatasetEnum(enum.Enum):
             return get_MNIST()
         elif self == DatasetEnum.pre_cifar10:
             return get_pre_cifar10()
-        elif self == DatasetEnum.mnist10k:
+        elif self in (
+                DatasetEnum.mnist10k,
+                DatasetEnum.mnist10kconv,
+        ):
             return get_MNIST_10k()
         elif self in (
                 DatasetEnum.repeated_mnist_w_noise2,
@@ -230,6 +235,7 @@ class DatasetEnum(enum.Enum):
         if self in (
                 DatasetEnum.mnist,
                 DatasetEnum.mnist10k,
+                DatasetEnum.mnist10kconv,
                 DatasetEnum.pre_cifar10,
                 DatasetEnum.repeated_mnist_w_noise,
                 DatasetEnum.repeated_mnist_w_noise2,
@@ -256,6 +262,8 @@ class DatasetEnum(enum.Enum):
             return mnist_model.BayesianNet(num_classes=num_classes).to(device)
         elif self == DatasetEnum.mnist10k:
             return mnist_model_full.BayesianNet(num_classes=num_classes).to(device) ###
+        elif self == DatasetEnum.mnist10kconv:
+            return mnist_cnn.BayesianNet(num_classes=num_classes).to(device) ###
         elif self in (DatasetEnum.emnist, DatasetEnum.emnist_bymerge):
             return emnist_model.BayesianNet(num_classes=num_classes).to(device)
         elif self == DatasetEnum.cinic10:
@@ -268,7 +276,10 @@ class DatasetEnum(enum.Enum):
     def create_optimizer(self, model):
         if self == DatasetEnum.cinic10:
             optimizer = optim.Adam(model.parameters(), lr=1e-4)
-        elif self == DatasetEnum.mnist10k:
+        elif self in (
+                DatasetEnum.mnist10k,
+                DatasetEnum.mnist10kconv,
+        ):
             optimizer = optim.Adam(model.parameters(), lr=1e-3)
         else:
             optimizer = optim.Adam(model.parameters())
