@@ -135,6 +135,7 @@ def main():
     parser.add_argument(
         "--experiment_description", type=str, default="Trying stuff..", help="Description of the experiment"
     )
+    parser.add_argument("--gpu", default=0, type=int)
     parser = create_experiment_config_argparser(parser)
     args = parser.parse_args()
 
@@ -175,7 +176,7 @@ def main():
 
     torch.manual_seed(args.seed)
 
-    device = torch.device("cuda" if use_cuda else "cpu")
+    device = torch.device("cuda:{}".format(args.gpu) if use_cuda else "cpu")
 
     print(f"Using {device} for computations")
 
