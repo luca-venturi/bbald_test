@@ -2,6 +2,8 @@ from dataclasses import dataclass
 import collections
 import enum
 import itertools
+import numpy as np
+import pickle
 
 from torch import optim
 from torch.utils.data import Dataset
@@ -102,7 +104,6 @@ def get_MNIST_10k():
 
     return DataSource(train_dataset=train_dataset, test_dataset=test_dataset)
 
-'''
 class custom_dataset(Dataset):
 	def __init__(self, x, y):
 		self.x = x
@@ -115,21 +116,32 @@ class custom_dataset(Dataset):
 		x, y = self.x[index], np.array(self.y[index])
 		return (torch.from_numpy(x), torch.from_numpy(y).to(torch.long))
 
-def get_pre_cifar10():
-    self.x_train = np.array([])
-    self.y_train = np.array([])
+def get_CIFAR10_vgg16in():
+    x_train = np.array([])
+    y_train = np.array([])
     for i in range(5):
         with open('data/cifar10_vgg16_train_{}'.format(i), 'rb') as rfile:
             x, y = pickle.load(rfile)
-            self.x_train = np.concatenate((self.x_train, x)) if self.x_train.size else x
-            self.y_train = np.concatenate((self.y_train, y)) if self.y_train.size else y
-    self.train_dataset = custom_dataset(self.x_train, self.y_train)
+            x_train = np.concatenate((x_train, x)) if x_train.size else x
+            y_train = np.concatenate((y_train, y)) if y_train.size else y
+    train_dataset = custom_dataset(x_train, y_train)
     with open('data/cifar10_vgg16_test', 'rb') as rfile:
-        self.x_test, self.y_test = pickle.load(rfile)
-    self.test_dataset = custom_dataset(self.x_test, self.y_test)
+        x_test, y_test = pickle.load(rfile)
+    test_dataset = custom_dataset(x_test, y_test)
 
     return DataSource(train_dataset=train_dataset, test_dataset=test_dataset)
-'''
+
+def get_SVHN_20k():
+    transform = transforms.Compose([transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    train_dataset = datasets.SVHN(root='./data', split='train', download=True, transform=transform)
+    test_dataset = datasets.SVHN(root='./data', split='test', download=True, transform=transform)
+
+    trainset_labels = list(train_dataset.labels)
+    pick_indices = pick_dataset_indices_balanced(range(10), trainset_labels, 20000)
+    train_dataset = data.Subset(train_dataset, pick_indices)
+
+    return DataSource(train_dataset=train_dataset, test_dataset=test_dataset)
 
 def get_RepeatedMNIST():
     # num_classes = 10, input_size = 28
@@ -145,7 +157,6 @@ class DatasetEnum(enum.Enum):
     mnist = "mnist"
     mnist10k = "mnist10k"
     mnist10kconv = "mnist10kconv"
-    pre_cifar10 = "pre_cifar10"
     emnist = "emnist"
     emnist_bymerge = "emnist_bymerge"
     repeated_mnist_w_noise = "repeated_mnist_w_noise"
@@ -153,12 +164,16 @@ class DatasetEnum(enum.Enum):
     repeated_mnist_w_noise5 = "repeated_mnist_w_noise5"
     mnist_w_noise = "mnist_w_noise"
     cinic10 = "cinic10"
+    cifar10pre = "cifar10pre"
+    svhn20k = "svhn20k"
 
     def get_data_source(self):
         if self == DatasetEnum.mnist:
             return get_MNIST()
-        elif self == DatasetEnum.pre_cifar10:
-            return get_pre_cifar10()
+        elif self == DatasetEnum.cifar10pre:
+            return get_CIFAR10_vgg16in()
+        elif self == DatasetEnum.svhn20k:
+            return get_SVHN_20k()
         elif self in (
                 DatasetEnum.mnist10k,
                 DatasetEnum.mnist10kconv,
@@ -236,7 +251,8 @@ class DatasetEnum(enum.Enum):
                 DatasetEnum.mnist,
                 DatasetEnum.mnist10k,
                 DatasetEnum.mnist10kconv,
-                DatasetEnum.pre_cifar10,
+                DatasetEnum.cifar10pre,
+                DatasetEnum.svhn20k,
                 DatasetEnum.repeated_mnist_w_noise,
                 DatasetEnum.repeated_mnist_w_noise2,
                 DatasetEnum.repeated_mnist_w_noise5,
@@ -264,12 +280,14 @@ class DatasetEnum(enum.Enum):
             return mnist_model_full.BayesianNet(num_classes=num_classes).to(device) ###
         elif self == DatasetEnum.mnist10kconv:
             return mnist_cnn.BayesianNet(num_classes=num_classes).to(device) ###
+        elif self == DatasetEnum.cifar10pre:
+            return cifar10pre_model.BayesianNet(num_classes=num_classes).to(device) ###
+        elif self == DatasetEnum.svhn20k:
+            return vgg_model.vgg16(num_classes=num_classes).to(device) ###
         elif self in (DatasetEnum.emnist, DatasetEnum.emnist_bymerge):
             return emnist_model.BayesianNet(num_classes=num_classes).to(device)
         elif self == DatasetEnum.cinic10:
             return vgg_model.vgg16_cinic10_bn(pretrained=True, num_classes=num_classes).to(device)
-        elif self == DatasetEnum.pre_cifar10:
-            return pre_cifar10_model.BayesianNet()
         else:
             raise NotImplementedError(f"Unknown dataset {self}!")
 
@@ -281,6 +299,10 @@ class DatasetEnum(enum.Enum):
                 DatasetEnum.mnist10kconv,
         ):
             optimizer = optim.Adam(model.parameters(), lr=1e-3)
+        elif self == DatasetEnum.cifar10pre:
+            optimizer = optim.Adam(model.parameters(), lr=3e-4, weight_decay=5e-4)
+        elif self == DatasetEnum.svhn20k:
+            optimizer = optim.SGD(model.parameters(), lr=5e-3, momentum=0.9, weight_decay=5e-4)
         else:
             optimizer = optim.Adam(model.parameters())
         return optimizer
