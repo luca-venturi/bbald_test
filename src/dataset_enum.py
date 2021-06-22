@@ -18,6 +18,7 @@ import mnist_model_full
 import mnist_cnn
 import emnist_model
 import vgg_model
+import cifar10pre_model
 from active_learning_data import ActiveLearningData
 from torch_utils import get_balanced_sample_indices
 from train_model import train_model
