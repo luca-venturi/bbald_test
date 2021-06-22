@@ -125,6 +125,7 @@ def get_CIFAR10_vgg16in():
             x, y = pickle.load(rfile)
             x_train = np.concatenate((x_train, x)) if x_train.size else x
             y_train = np.concatenate((y_train, y)) if y_train.size else y
+    train_dataset = custom_dataset(x_train, y_train)
     with open('data/cifar10_vgg16_test', 'rb') as rfile:
         x_test, y_test = pickle.load(rfile)
     test_dataset = custom_dataset(x_test, y_test)
