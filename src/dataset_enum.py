@@ -119,12 +119,12 @@ class custom_dataset(Dataset):
 def get_CIFAR10_vgg16in():
     x_train = np.array([])
     y_train = np.array([])
-    for i in range(5):
+
+    for i in range(99,599,100):
         with open('data/cifar10_vgg16_train_{}'.format(i), 'rb') as rfile:
             x, y = pickle.load(rfile)
             x_train = np.concatenate((x_train, x)) if x_train.size else x
             y_train = np.concatenate((y_train, y)) if y_train.size else y
-    train_dataset = custom_dataset(x_train, y_train)
     with open('data/cifar10_vgg16_test', 'rb') as rfile:
         x_test, y_test = pickle.load(rfile)
     test_dataset = custom_dataset(x_test, y_test)
@@ -545,5 +545,7 @@ def get_targets(dataset):
         return torch.as_tensor(dataset.targets)
     if isinstance(dataset, datasets.SVHN):
         return dataset.labels
+    if isinstance(dataset, custom_dataset):
+        return torch.from_numpy(np.array(dataset.y)).to(torch.long)
 
     raise NotImplementedError(f"Unknown dataset {dataset}!")
